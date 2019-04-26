@@ -100,12 +100,12 @@ class SQLObject
   def insert
     col_names = self.class.columns.drop(1)
     cols = col_names.map(&:to_sym).join(", ")
-    q_marks = []
-    col_names.length.times { q_marks << "?" }
-    # debugger
-    q = q_marks.join(", ")
     vals = self.attribute_values.drop(1)
 
+    q_marks = []
+    col_names.length.times { q_marks << "?" }
+    q = q_marks.join(", ")
+   
     data = DBConnection.execute(<<-SQL, *vals)
       INSERT INTO
         #{self.class.table_name} (#{cols})
@@ -117,10 +117,23 @@ class SQLObject
   end
 
   def update
-    # ...
+    col_names = self.class.columns.drop(1)
+    cols = col_names.map { |c| "#{c} = ?" }.join(", ")
+    vals = self.attribute_values.drop(1)
+
+    data = DBConnection.execute(<<-SQL, *vals)
+      UPDATE
+        #{self.class.table_name} 
+      SET
+        #{cols}
+      WHERE
+        id = (#{self.id})
+      SQL
   end
 
   def save
-    # ...
+    data = self.class.find(self.id)
+
+    data == nil ? self.insert : self.update 
   end
 end
